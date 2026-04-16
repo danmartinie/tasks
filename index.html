@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tasks">
+<meta name="theme-color" content="#f5f5f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)">
+<title>Tasks</title>
+<style>
+:root {
+  --bg: #f5f5f4;
+  --card: #ffffff;
+  --col-bg: #ebebea;
+  --text: #1a1a1a;
+  --text2: #6b7280;
+  --text3: #9ca3af;
+  --border: rgba(0,0,0,0.1);
+  --border2: rgba(0,0,0,0.18);
+  --info-bg: #e6f1fb;
+  --info-border: #85b7eb;
+  --danger-bg: #fcebeb;
+  --danger-border: #f09595;
+  --danger-text: #a32d2d;
+  --r: 10px;
+  --rl: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --col-bg: #2c2c2e;
+    --text: #f5f5f5;
+    --text2: #a1a1aa;
+    --text3: #6b7280;
+    --border: rgba(255,255,255,0.1);
+    --border2: rgba(255,255,255,0.18);
+    --info-bg: #042c53;
+    --info-border: #185fa5;
+    --danger-bg: #501313;
+    --danger-border: #791f1f;
+    --danger-text: #f09595;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: max(env(safe-area-inset-top),16px) max(env(safe-area-inset-right),16px) max(env(safe-area-inset-bottom),16px) max(env(safe-area-inset-left),16px);
+}
+h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; padding: 4px 4px 16px; }
+.board { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; }
+@media (max-width: 640px) { .board { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.col { background: var(--col-bg); border-radius: var(--rl); padding: 10px; }
+.col-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.col-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; }
+.col-count { font-size: 11px; color: var(--text3); background: var(--card); border: 0.5px solid var(--border); border-radius: 20px; padding: 1px 6px; }
+.drop-zone { min-height: 48px; border-radius: var(--r); transition: background 0.12s; }
+.drop-zone.drag-over { background: var(--info-bg); outline: 1.5px dashed var(--info-border); outline-offset: -1px; }
+.card { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--r); padding: 9px 32px 9px 10px; margin-bottom: 5px; font-size: 13px; color: var(--text); line-height: 1.35; position: relative; cursor: grab; user-select: none; transition: opacity 0.15s; word-break: break-word; }
+.card:last-child { margin-bottom: 0; }
+.card.dragging { opacity: 0.35; }
+.card-del { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); background: none; border: none; color: var(--text3); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px; opacity: 0; transition: opacity 0.1s; }
+.card:hover .card-del { opacity: 1; }
+@media (max-width: 640px) { .card-del { opacity: 0.4; } }
+.col-first .col-title { color: #185FA5; }
+.col-next .col-title { color: #3B6D11; }
+.col-later .col-title { color: #854F0B; }
+.col-yard .col-title { color: #0F6E56; }
+.voice-bar { display: flex; align-items: center; gap: 8px; padding: 12px 0 6px; border-top: 0.5px solid var(--border); flex-wrap: wrap; }
+.mic-btn { display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--r); border: 0.5px solid var(--border2); background: var(--card); color: var(--text); font-size: 14px; font-family: inherit; cursor: pointer; white-space: nowrap; transition: all 0.15s; -webkit-appearance: none; }
+.mic-btn.listening { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); }
+.mic-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.mic-btn.listening .mic-dot { animation: blink 0.75s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+.transcript-box { flex: 1; min-width: 120px; font-size: 13px; color: var(--text2); font-style: italic; padding: 8px 10px; border-radius: var(--r); background: var(--col-bg); border: 0.5px solid var(--border); min-height: 36px; line-height: 1.4; }
+.add-btn { padding: 9px 16px; border-radius: var(--r); border: 0.5px solid var(--border2); background: var(--card); color: var(--text); font-size: 14px; font-family: inherit; cursor: pointer; white-space: nowrap; -webkit-appearance: none; }
+.add-btn:disabled { opacity: 0.35; cursor: default; }
+.status { font-size: 12px; color: var(--text3); padding: 4px 2px; min-height: 18px; width: 100%; }
+.quick-row { display: flex; gap: 8px; padding: 10px 0 0; }
+.quick-input { flex: 1; padding: 9px 12px; border-radius: var(--r); border: 0.5px solid var(--border2); background: var(--card); color: var(--text); font-size: 14px; font-family: inherit; -webkit-appearance: none; outline: none; }
+.quick-input:focus { border-color: var(--info-border); }
+.quick-select { padding: 9px 10px; border-radius: var(--r); border: 0.5px solid var(--border2); background: var(--card); color: var(--text); font-size: 14px; font-family: inherit; -webkit-appearance: none; cursor: pointer; }
+.quick-submit { padding: 9px 14px; border-radius: var(--r); border: 0.5px solid var(--border2); background: var(--card); color: var(--text); font-size: 18px; font-family: inherit; cursor: pointer; -webkit-appearance: none; }
+</style>
+</head>
+<body>
+
+<h1>Tasks</h1>
+
+<div class="board">
+  <div class="col col-first">
+    <div class="col-header"><span class="col-title">First</span><span class="col-count" id="cnt-first">0</span></div>
+    <div class="drop-zone" id="col-first"></div>
+  </div>
+  <div class="col col-next">
+    <div class="col-header"><span class="col-title">Next</span><span class="col-count" id="cnt-next">0</span></div>
+    <div class="drop-zone" id="col-next"></div>
+  </div>
+  <div class="col col-later">
+    <div class="col-header"><span class="col-title">Later</span><span class="col-count" id="cnt-later">0</span></div>
+    <div class="drop-zone" id="col-later"></div>
+  </div>
+  <div class="col col-yard">
+    <div class="col-header"><span class="col-title">Yard</span><span class="col-count" id="cnt-yard">0</span></div>
+    <div class="drop-zone" id="col-yard"></div>
+  </div>
+</div>
+
+<div class="quick-row">
+  <input class="quick-input" id="quickInput" placeholder="Type a task..." onkeydown="if(event.key==='Enter')quickAdd()">
+  <select class="quick-select" id="quickCol">
+    <option value="first">First</option>
+    <option value="next" selected>Next</option>
+    <option value="later">Later</option>
+    <option value="yard">Yard</option>
+  </select>
+  <button class="quick-submit" onclick="quickAdd()">+</button>
+</div>
+
+<div class="voice-bar">
+  <button class="mic-btn" id="micBtn" onclick="toggleMic()">
+    <span class="mic-dot"></span>
+    <span id="micLabel">Dictate tasks</span>
+  </button>
+  <div class="transcript-box" id="transcript">tap mic, say several tasks at once</div>
+  <button class="add-btn" id="addBtn" onclick="processSpeech()" disabled>Add tasks</button>
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const COLS = ['first','next','later','yard'];
+let tasks = {first:[],next:[],later:[],yard:[]};
+let dragId=null, dragCol=null;
+let recognition=null, isListening=false, pendingText='';
+
+const KEYWORDS = {
+  yard:  ['yard','lawn','grass','mow','mowing','weed','weeds','fertilize','fertilizer','fertilizing','mulch','mulching','plant','plants','planting','garden','bed','beds','hedge','hedges','trim','trimming','prune','pruning','tree','trees','shrub','shrubs','flower','flowers','seed','seeds','drip','irrigation','irrigate','sprinkler','water the','watering','hose','rake','raking','leaves','compost','soil','dirt','outdoor','outside','patio','deck','fence','driveway','zoysia','bermuda','emitter','emitters','gutter','gutters'],
+  first: ['first','urgent','asap','right away','today','critical','important','priority','must ','need to call','need to email','need to pay','deadline','immediately','as soon as'],
+  later: ['later','someday','eventually','maybe','low priority','whenever','future','one day','at some point','down the road','backburner','not urgent','no rush']
+};
+
+function classifyTask(text) {
+  const t = text.toLowerCase();
+  if (KEYWORDS.yard.some(k => t.includes(k))) return 'yard';
+  if (KEYWORDS.first.some(k => t.includes(k))) return 'first';
+  if (KEYWORDS.later.some(k => t.includes(k))) return 'later';
+  return 'next';
+}
+
+function splitTasks(text) {
+  const parts = text
+    .replace(/\band then\b/gi, '|')
+    .replace(/,\s*(and\s+)?/gi, '|')
+    .replace(/;\s*/g, '|')
+    .replace(/\balso\b/gi, '|')
+    .replace(/\d+\.\s*/g, '|')
+    .split('|')
+    .map(s => s.trim())
+    .filter(s => s.length > 2);
+  const filler = /^(i need to|i should|i have to|i want to|need to|should|have to|want to|remember to|don't forget to|make sure to|be sure to|first|next|later|then|and)\s+/i;
+  return parts.map(p => p.replace(filler,'').trim()).filter(p => p.length > 2);
+}
+
+function processSpeech() {
+  const text = pendingText || document.getElementById('transcript').textContent;
+  if (!text.trim()) return;
+  const parts = splitTasks(text);
+  if (!parts.length) { setStatus('Could not split — try again'); return; }
+  parts.forEach(task => {
+    const col = classifyTask(task);
+    tasks[col].push(task.charAt(0).toUpperCase() + task.slice(1));
+  });
+  save(); render();
+  setStatus(`Added ${parts.length} task${parts.length!==1?'s':''}`);
+  document.getElementById('transcript').textContent = '';
+  document.getElementById('addBtn').disabled = true;
+  pendingText = '';
+}
+
+function save() { try { localStorage.setItem('tasks_v1', JSON.stringify(tasks)); } catch(e) {} }
+function load() { try { const d=localStorage.getItem('tasks_v1'); if(d) tasks=JSON.parse(d); } catch(e) {} }
+
+function render() {
+  COLS.forEach(col => {
+    const zone = document.getElementById('col-'+col);
+    zone.innerHTML = tasks[col].map((t,i) =>
+      `<div class="card" draggable="true" data-col="${col}" data-idx="${i}"
+        ondragstart="dstart(event,'${col}',${i})" ondragover="dover(event)"
+        ondrop="ddrop(event,'${col}')" ondragend="dend(event)"
+        ontouchstart="tstart(event,'${col}',${i})" ontouchmove="tmove(event)" ontouchend="tend(event)"
+      >${escHtml(t)}<button class="card-del" onclick="del('${col}',${i})">×</button></div>`
+    ).join('');
+    document.getElementById('cnt-'+col).textContent = tasks[col].length;
+    zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
+    zone.ondragleave = () => zone.classList.remove('drag-over');
+    zone.ondrop = e => { e.preventDefault(); ddrop(e, col); };
+  });
+}
+
+function escHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function del(col,idx) { tasks[col].splice(idx,1); save(); render(); }
+function quickAdd() {
+  const v = document.getElementById('quickInput').value.trim();
+  if (!v) return;
+  const col = document.getElementById('quickCol').value;
+  tasks[col].unshift(v);
+  document.getElementById('quickInput').value = '';
+  save(); render();
+}
+
+function dstart(e,col,idx) { dragId=idx; dragCol=col; setTimeout(()=>e.target.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; }
+function dover(e) { e.preventDefault(); }
+function dend(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over')); }
+function ddrop(e,toCol) {
+  e.preventDefault();
+  document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over'));
+  if (dragCol===null) return;
+  const item=tasks[dragCol].splice(dragId,1)[0];
+  const zone=document.getElementById('col-'+toCol);
+  const cards=[...zone.querySelectorAll('.card')];
+  let idx=tasks[toCol].length;
+  for(let i=0;i<cards.length;i++){const r=cards[i].getBoundingClientRect();if(e.clientY<r.top+r.height/2){idx=i;break;}}
+  tasks[toCol].splice(idx,0,item);
+  dragId=null; dragCol=null; save(); render();
+}
+
+let tCard=null,tClone=null,tOffX=0,tOffY=0,tSrcCol=null,tSrcIdx=null;
+function tstart(e,col,idx) {
+  tSrcCol=col; tSrcIdx=idx; tCard=e.currentTarget;
+  const r=tCard.getBoundingClientRect();
+  tOffX=e.touches[0].clientX-r.left; tOffY=e.touches[0].clientY-r.top;
+  tClone=tCard.cloneNode(true);
+  Object.assign(tClone.style,{position:'fixed',width:r.width+'px',opacity:'0.85',pointerEvents:'none',zIndex:'9999',borderRadius:'10px',left:(e.touches[0].clientX-tOffX)+'px',top:(e.touches[0].clientY-tOffY)+'px'});
+  document.body.appendChild(tClone);
+  tCard.style.opacity='0.3';
+}
+function tmove(e) {
+  if (!tClone) return; e.preventDefault();
+  tClone.style.left=(e.touches[0].clientX-tOffX)+'px';
+  tClone.style.top=(e.touches[0].clientY-tOffY)+'px';
+  document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over'));
+  const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+  const zone=el&&el.closest('.drop-zone'); if(zone) zone.classList.add('drag-over');
+}
+function tend(e) {
+  if (!tClone) return;
+  tClone.remove(); tClone=null;
+  if (tCard) tCard.style.opacity='';
+  document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over'));
+  const el=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+  const zone=el&&el.closest('.drop-zone');
+  if (zone&&tSrcCol!==null) {
+    const toCol=zone.id.replace('col-','');
+    const item=tasks[tSrcCol].splice(tSrcIdx,1)[0];
+    const cards=[...zone.querySelectorAll('.card')];
+    let idx=tasks[toCol].length;
+    for(let i=0;i<cards.length;i++){const r=cards[i].getBoundingClientRect();if(e.changedTouches[0].clientY<r.top+r.height/2){idx=i;break;}}
+    tasks[toCol].splice(idx,0,item);
+    save(); render();
+  }
+  tCard=null; tSrcCol=null; tSrcIdx=null;
+}
+
+function toggleMic() {
+  if (isListening) { stopMic(); return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if (!SR) { setStatus('Voice not available — use the type field above'); return; }
+  recognition=new SR();
+  recognition.continuous=true; recognition.interimResults=true; recognition.lang='en-US';
+  recognition.onstart=()=>{isListening=true;document.getElementById('micBtn').classList.add('listening');document.getElementById('micLabel').textContent='Listening... (tap to stop)';document.getElementById('transcript').textContent='';setStatus('');};
+  recognition.onresult=e=>{let f='';for(let i=0;i<e.results.length;i++)f+=e.results[i][0].transcript;document.getElementById('transcript').textContent=f;pendingText=f;document.getElementById('addBtn').disabled=false;};
+  recognition.onend=()=>{isListening=false;document.getElementById('micBtn').classList.remove('listening');document.getElementById('micLabel').textContent='Dictate tasks';};
+  recognition.onerror=()=>{isListening=false;document.getElementById('micBtn').classList.remove('listening');document.getElementById('micLabel').textContent='Dictate tasks';setStatus('Mic blocked — allow microphone in browser settings');};
+  recognition.start();
+}
+function stopMic() { if(recognition) recognition.stop(); }
+function setStatus(msg) { document.getElementById('status').textContent=msg; }
+
+load(); render();
+</script>
+</body>
+</html>
